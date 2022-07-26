@@ -1,0 +1,19 @@
+{
+  "name": "farcaster-tweeter",
+  "version": "0.0.1",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index",
+    "dev": "nodemon index"
+  },
+  "author": "Greg Skriloff",
+  "license": "ISC",
+  "dependencies": {
+    "cron": "^2.1.0",
+    "dotenv": "^16.0.1",
+    "ethers": "^5.6.9",
+    "got": "^11.8.2",
+    "node-cron": "3.0.0",
+    "twit": "^2.2.11"
+  }
+}
