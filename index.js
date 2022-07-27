@@ -6,8 +6,11 @@ const { getActivity } = require('./utils/farcaster')
 const FARCASTER_USERNAME = process.env.FARCASTER_USERNAME
 let previousLastCast = new Date().getTime()
 
-// Check for new posts 5 minutes
-cron.schedule('*/5 * * * *', async () => {
+const devEnv = process.env.NODE_ENV === 'development'
+const cronSchedule = devEnv ? '*/10 * * * * *' : '*/2 * * * *'
+
+// Check activity every 2 mins (or 10 secs in dev mode)
+cron.schedule(cronSchedule, async () => {
   const casts = await getActivity(FARCASTER_USERNAME).then((res) => {
     // Only return 10 recent casts to save bandwidth
     return res.slice(0, 10)
@@ -18,7 +21,7 @@ cron.schedule('*/5 * * * *', async () => {
     if (
       cast.body.data.replyParentMerkleRoot ||
       cast.body.data.text.startsWith('recast:') ||
-      cast.body.data.text.startsWith('recast:')
+      cast.body.data.text.startsWith('delete:')
     ) {
       return false
     } else {
@@ -32,16 +35,36 @@ cron.schedule('*/5 * * * *', async () => {
     return cast.body.publishedAt > previousLastCast
   })
 
-  if (newCasts.length === 0) {
-    console.log('No new casts')
-    return
-  }
+  if (newCasts.length === 0) return
+
+  const isOptIn = process.env.OPT_IN == 'true'
+  const optInMessage = process.env.OPT_IN_MESSAGE
+  const sentFromFc = process.env.SENT_FROM_FARCASTER == 'true'
 
   // Handle new casts
-  console.log(`New casts!`)
   newCasts.forEach((cast) => {
-    // Post to Twitter
-    tweet(cast.body.data.text)
+    let text = cast.body.data.text
+
+    // Ignore @ mentions
+    if (text.match(/@[^\s]/g)) {
+      return console.log('New cast but it includes a mention -- ignoring')
+    }
+
+    // If opt-in is enabled, ignore casts that don't end with the message
+    if (isOptIn && !text.endsWith(optInMessage)) {
+      return console.log("New cast but it doesn't opt-in -- ignoring")
+    }
+
+    // If opt-out is enabled, ignore casts that end with the message
+    if (!isOptIn && text.endsWith(optInMessage)) {
+      return console.log('New cast but it opts-out -- ignoring')
+    }
+
+    if (sentFromFc && text.length < 250) {
+      text = `${text}\n\n - Sent from Farcaster`
+    }
+
+    tweet(text)
   })
 
   // Set the previous last cast date

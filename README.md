@@ -5,7 +5,8 @@ Automatically publish new casts to Twitter.
 Notes:
 - This isn't really consumer friendly, but could hopefully be a starting point for somebody to build out an easier integration.
 - The script filters out any non-parent casts, meaning threads or other types of replies won't be posted to Twitter.
-- By default, new casts are fetched every 5 minutes. This can be changed in the `cron.schedule()` function in `index.js`.
+- By default, new casts are fetched every 2 minutes. This can be changed in the `cron.schedule()` function in `index.js`.
+- Any casts with an @ mention is ignored, since most Farcaster usernames are different from Twitter usernames.
 
 ## Twitter API
 
@@ -22,7 +23,7 @@ Install project dependencies:
 yarn install
 ```
 
-Configure the environment variables with your Twitter API keys and Farcaster username:
+Configure the environment variables (see the configuration section below):
 ```sh
 cp .env.example .env
 ```
@@ -31,3 +32,13 @@ Start a local server:
 ```sh
 yarn start
 ```
+
+## Configuration
+
+Most of the environment variables in `.env.example` are self explanatory, but the following are slightly more confusing:
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| OPT_IN | boolean | false | If true, your cast will only be posted to Twitter if it ends with OPT_IN_MESSAGE. If false, casts will always be posted to Twitter unless they end with OPT_IN_MESSAGE. |
+| OPT_IN_MESSAGE | string | "-t" | End your cast with this to trigger opt-in or out to casts, based on the above variable. |
+| SENT_FROM_FARCASTER | boolean | false | If your cast is less than 250 characters, "- Sent from Farcaster" will be appended to the end of your tweet. |
